@@ -1,45 +1,33 @@
-from flask import Flask, render_template, jsonify, request
-
-app = Flask(__name__)
-
-from pymongo import MongoClient
-
-client = MongoClient('localhost', 27017)
-db = client.dbOrder
+from bs4 import BeautifulSoup
+import requests
 
 
-## HTML 화면 보여주기
-@app.route('/')
-def homework():
-    return render_template('index.html')
+def tag_helper(tag):
+    if tag.name == 'img':
+        # img tag
+        return '[IMG]'
+    elif tag.name == 'p':
+        # p tag
+        return tag.get_text()
+    else:
+        return ''
 
 
-# 주문하기(POST) API
-@app.route('/order', methods=['POST'])
-def save_order():
-    name = request.form['name']
-    count = request.form['count']
-    address = request.form['address']
-    phone = request.form['phone']
+def get_content():
+    url = 'https://m.blog.naver.com/kcgklwxh/222057582290'
+    req = requests.get(url)
+    content = req.content
 
-    data = {
-        'name': name,
-        'count': count,
-        'address': address,
-        'phone' : phone
-    }
+    soup = BeautifulSoup(content, 'html.parser')
+    contents = soup.select_one('div.se-main-container')
 
-    db.order.insert_one(data)
+    result = list(map(tag_helper, contents.find_all(['img', 'p'])))
 
-    return jsonify({'result': 'success', 'msg':'주문 완료'})
+    return result
 
 
-# 주문 목록보기(Read) API
-@app.route('/order', methods=['GET'])
-def view_orders():
-    order=list(db.order.find({},{'_id':False}))
-    return jsonify({'result': 'success', 'orders': '주문 완료'})
+contents = get_content()
 
-
-if __name__ == '__main__':
-    app.run('0.0.0.0', port=5000, debug=True)
+print(contents)
+for item in contents:
+    print(item)
